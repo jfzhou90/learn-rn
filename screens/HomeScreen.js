@@ -1,13 +1,55 @@
 import React from 'react';
 import styled from 'styled-components';
-import { ScrollView, SafeAreaView, TouchableOpacity, Animated, Easing, StatusBar } from 'react-native';
+import {
+  ScrollView,
+  SafeAreaView,
+  TouchableOpacity,
+  Animated,
+  Easing,
+  StatusBar,
+} from 'react-native';
 import { connect } from 'react-redux';
 import { NotificationIcon } from '../components/Icons';
 import Card from '../components/Card';
 import Logo from '../components/Logo';
 import Course from '../components/Course';
 import Menu from '../components/Menu';
-import Avatar from "../components/Avatar";
+import Avatar from '../components/Avatar';
+import gql from 'graphql-tag';
+import { Query } from 'react-apollo';
+
+const CardsQuery = gql`
+  {
+    cardsCollection {
+      items {
+        title
+        subtitle
+        image {
+          title
+          description
+          contentType
+          fileName
+          size
+          url
+          width
+          height
+        }
+        subtitle
+        caption
+        logo {
+          title
+          description
+          contentType
+          fileName
+          size
+          url
+          width
+          height
+        }
+      }
+    }
+  }
+`;
 
 function mapStateToProps(state) {
   return { action: state.action, name: state.name };
@@ -24,12 +66,12 @@ function mapDispatchToProps(dispatch) {
 
 class HomeScreen extends React.Component {
   static navigationOptions = {
-    header: null
-  }
+    header: null,
+  };
 
   state = {
     scale: new Animated.Value(1),
-    opacity: new Animated.Value(1)
+    opacity: new Animated.Value(1),
   };
 
   componentDidUpdate() {
@@ -37,7 +79,7 @@ class HomeScreen extends React.Component {
   }
 
   componentDidMount() {
-    StatusBar.setBarStyle("dark-content", true);
+    StatusBar.setBarStyle('dark-content', true);
   }
 
   toggleMenu = () => {
@@ -45,34 +87,35 @@ class HomeScreen extends React.Component {
       Animated.timing(this.state.scale, {
         toValue: 0.9,
         duration: 300,
-        easing: Easing.in()
+        easing: Easing.in(),
       }).start();
       Animated.spring(this.state.opacity, {
         toValue: 0.5,
       }).start();
 
-      StatusBar.setBarStyle("light-content", true);
+      StatusBar.setBarStyle('light-content', true);
     }
 
     if (this.props.action == 'closeMenu') {
       Animated.timing(this.state.scale, {
         toValue: 1,
         duration: 300,
-        easing: Easing.in()
+        easing: Easing.in(),
       }).start();
       Animated.spring(this.state.opacity, {
         toValue: 1,
       }).start();
-      StatusBar.setBarStyle("dark-content", true);
+      StatusBar.setBarStyle('dark-content', true);
     }
-
   };
 
   render() {
     return (
       <RootView>
         <Menu />
-        <AnimatedContainer style={{ transform: [{ scale: this.state.scale }], opacity: this.state.opacity }}>
+        <AnimatedContainer
+          style={{ transform: [{ scale: this.state.scale }], opacity: this.state.opacity }}
+        >
           <SafeAreaView>
             <ScrollView style={{ height: '100%' }}>
               <TitleBar>
@@ -80,14 +123,14 @@ class HomeScreen extends React.Component {
                   onPress={this.props.openMenu}
                   style={{ position: 'absolute', top: 0, left: 20 }}
                 >
-                  <Avatar/>
+                  <Avatar />
                 </TouchableOpacity>
                 <Title>Welcome back,</Title>
                 <Name>{this.props.name}</Name>
                 <NotificationIcon style={{ position: 'absolute', right: 20, top: 5 }} />
               </TitleBar>
               <ScrollView
-                style={{ flexDirection: 'row', padding: 20, paddingLeft: 12, paddingTop: 30 }}
+                style={{ padding: 20, paddingLeft: 12, paddingTop: 30 }}
                 horizontal={true}
                 showsHorizontalScrollIndicator={false}
               >
@@ -102,20 +145,35 @@ class HomeScreen extends React.Component {
                 style={{ paddingBottom: 30 }}
                 showsHorizontalScrollIndicator={false}
               >
-                {cards.map((card, index) => (
-                  <TouchableOpacity key={index} onPress={() => {
-                    this.props.navigation.push("Section")
-                  }}>
-                    <Card
-                      key={index}
-                      title={card.title}
-                      image={card.image}
-                      caption={card.caption}
-                      logo={card.logo}
-                      subtitle={card.subtitle}
-                    />
-                  </TouchableOpacity>
-                ))}
+                <Query query={CardsQuery}>
+                  {({ loading, error, data }) => {
+                    if (loading) return <Message>Loading...</Message>;
+                    if(error) return <Message>Error...</Message>
+                    return (
+                      <CardsContainer>
+                        {data.cardsCollection.items.map((card, index) => (
+                          <TouchableOpacity
+                            key={index}
+                            onPress={() => {
+                              this.props.navigation.push('Section', {
+                                section: card,
+                              });
+                            }}
+                          >
+                            <Card
+                              key={index}
+                              title={card.title}
+                              image={card.image}
+                              caption={card.caption}
+                              logo={card.logo}
+                              subtitle={card.subtitle}
+                            />
+                          </TouchableOpacity>
+                        ))}
+                      </CardsContainer>
+                    );
+                  }}
+                </Query>
               </ScrollView>
               <Subtitle>Popular Courses</Subtitle>
               {courses.map((course, index) => (
@@ -142,6 +200,17 @@ export default connect(
   mapStateToProps,
   mapDispatchToProps
 )(HomeScreen);
+
+const Message = styled.Text`
+  margin: 20px;
+  color: #b8bece;
+  font-size: 15px;
+  font-weight: 500;
+`;
+
+const CardsContainer = styled.View`
+  flex-direction:row;
+`
 
 const RootView = styled.View`
   background: black;
