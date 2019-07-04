@@ -5,6 +5,12 @@ import * as Icon from '@expo/vector-icons'
 import MenuItem from './MenuItem';
 import { connect } from 'react-redux';
 
+const screenWidth = Dimensions.get('window').width;
+var cardWidth = screenWidth;
+if (screenWidth > 500) {
+  cardWidth = 500;
+}
+
 function mapStateToProps(state) {
   return { action: state.action };
 }
@@ -18,10 +24,7 @@ function mapDispatchToProps(dispatch) {
   };
 }
 
-const screenHeight =
-  Dimensions.get('window').height > Dimensions.get('window').width
-    ? Dimensions.get('window').height
-    : Dimensions.get('window').width;
+const screenHeight = Dimensions.get('window').height;
 
 class Menu extends React.Component {
   state = {
@@ -49,6 +52,7 @@ class Menu extends React.Component {
       }).start();
     }
   };
+
   render() {
     return (
       <AnimatedContainer style={{ top: this.state.top }}>
@@ -59,7 +63,13 @@ class Menu extends React.Component {
         </Cover>
         <TouchableOpacity
           onPress={this.props.closeMenu}
-          style={{ position: 'absolute', top: 120, left: '50%', marginLeft: -22, zIndex: 1 }}
+          style={{
+            position: 'absolute',
+            top: 120,
+            left: '50%',
+            marginLeft: -22,
+            zIndex: 1,
+          }}
         >
           <CloseView>
             <Icon.Ionicons name="ios-close" size={44} color="#546bfb" />
@@ -75,7 +85,10 @@ class Menu extends React.Component {
   }
 }
 
-export default connect(mapStateToProps, mapDispatchToProps)(Menu);
+export default connect(
+  mapStateToProps,
+  mapDispatchToProps
+)(Menu);
 
 const Image = styled.Image`
   position: absolute;
@@ -108,7 +121,8 @@ const CloseView = styled.View`
 const Container = styled.View`
   position: absolute;
   background: white;
-  width: 100%;
+  width: ${cardWidth};
+  align-self: center;
   height: 100%;
   z-index: 100;
   border-radius: 10px;

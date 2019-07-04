@@ -1,5 +1,4 @@
 import React from 'react';
-import styled from 'styled-components';
 import {
   ScrollView,
   SafeAreaView,
@@ -7,13 +6,15 @@ import {
   Animated,
   Easing,
   StatusBar,
+  Platform,
 } from 'react-native';
-import { connect } from 'react-redux';
-import { NotificationIcon } from '../components/Icons';
+import styled from 'styled-components';
 import Card from '../components/Card';
+import { NotificationIcon } from '../components/Icons';
 import Logo from '../components/Logo';
 import Course from '../components/Course';
 import Menu from '../components/Menu';
+import { connect } from 'react-redux';
 import Avatar from '../components/Avatar';
 import gql from 'graphql-tag';
 import { Query } from 'react-apollo';
@@ -46,6 +47,7 @@ const CardsQuery = gql`
           width
           height
         }
+        content
       }
     }
   }
@@ -74,12 +76,13 @@ class HomeScreen extends React.Component {
     opacity: new Animated.Value(1),
   };
 
-  componentDidUpdate() {
-    this.toggleMenu();
+  componentDidMount() {
+    const style = Platform.OS == 'ios' ? 'dark-content' : 'light-content';
+    StatusBar.setBarStyle(style, true);
   }
 
-  componentDidMount() {
-    StatusBar.setBarStyle('dark-content', true);
+  componentDidUpdate() {
+    this.toggleMenu();
   }
 
   toggleMenu = () => {
@@ -105,7 +108,9 @@ class HomeScreen extends React.Component {
       Animated.spring(this.state.opacity, {
         toValue: 1,
       }).start();
-      StatusBar.setBarStyle('dark-content', true);
+
+      const style = Platform.OS == 'ios' ? 'dark-content' : 'light-content';
+      StatusBar.setBarStyle(style, true);
     }
   };
 
@@ -114,7 +119,10 @@ class HomeScreen extends React.Component {
       <RootView>
         <Menu />
         <AnimatedContainer
-          style={{ transform: [{ scale: this.state.scale }], opacity: this.state.opacity }}
+          style={{
+            transform: [{ scale: this.state.scale }],
+            opacity: this.state.opacity,
+          }}
         >
           <SafeAreaView>
             <ScrollView style={{ height: '100%' }}>
@@ -130,7 +138,12 @@ class HomeScreen extends React.Component {
                 <NotificationIcon style={{ position: 'absolute', right: 20, top: 5 }} />
               </TitleBar>
               <ScrollView
-                style={{ padding: 20, paddingLeft: 12, paddingTop: 30 }}
+                style={{
+                  flexDirection: 'row',
+                  padding: 20,
+                  paddingLeft: 12,
+                  paddingTop: 30,
+                }}
                 horizontal={true}
                 showsHorizontalScrollIndicator={false}
               >
@@ -138,8 +151,7 @@ class HomeScreen extends React.Component {
                   <Logo key={index} image={logo.image} text={logo.text} />
                 ))}
               </ScrollView>
-
-              <Subtitle>Continue Learning</Subtitle>
+              <Subtitle>{'Continue Learning'.toUpperCase()}</Subtitle>
               <ScrollView
                 horizontal={true}
                 style={{ paddingBottom: 30 }}
@@ -148,7 +160,8 @@ class HomeScreen extends React.Component {
                 <Query query={CardsQuery}>
                   {({ loading, error, data }) => {
                     if (loading) return <Message>Loading...</Message>;
-                    if(error) return <Message>Error...</Message>
+                    if (error) return <Message>Error...</Message>;
+
                     return (
                       <CardsContainer>
                         {data.cardsCollection.items.map((card, index) => (
@@ -161,12 +174,12 @@ class HomeScreen extends React.Component {
                             }}
                           >
                             <Card
-                              key={index}
                               title={card.title}
-                              image={card.image}
+                              image={{ uri: card.image.url }}
                               caption={card.caption}
-                              logo={card.logo}
+                              logo={{ uri: card.logo.url }}
                               subtitle={card.subtitle}
+                              content={card.content}
                             />
                           </TouchableOpacity>
                         ))}
@@ -175,19 +188,21 @@ class HomeScreen extends React.Component {
                   }}
                 </Query>
               </ScrollView>
-              <Subtitle>Popular Courses</Subtitle>
-              {courses.map((course, index) => (
-                <Course
-                  key={index}
-                  image={course.image}
-                  title={course.title}
-                  subtitle={course.subtitle}
-                  logo={course.logo}
-                  author={course.author}
-                  avatar={course.avatar}
-                  caption={course.caption}
-                />
-              ))}
+              <Subtitle>{'Popular Courses'.toUpperCase()}</Subtitle>
+              <CoursesContainer>
+                {courses.map((course, index) => (
+                  <Course
+                    key={index}
+                    image={course.image}
+                    title={course.title}
+                    subtitle={course.subtitle}
+                    logo={course.logo}
+                    author={course.author}
+                    avatar={course.avatar}
+                    caption={course.caption}
+                  />
+                ))}
+              </CoursesContainer>
             </ScrollView>
           </SafeAreaView>
         </AnimatedContainer>
@@ -201,6 +216,12 @@ export default connect(
   mapDispatchToProps
 )(HomeScreen);
 
+const CoursesContainer = styled.View`
+  flex-direction: row;
+  flex-wrap: wrap;
+  padding-left: 10px;
+`;
+
 const Message = styled.Text`
   margin: 20px;
   color: #b8bece;
@@ -209,12 +230,22 @@ const Message = styled.Text`
 `;
 
 const CardsContainer = styled.View`
-  flex-direction:row;
-`
+  flex-direction: row;
+  padding-left: 10px;
+`;
 
 const RootView = styled.View`
   background: black;
   flex: 1;
+`;
+
+const Subtitle = styled.Text`
+  color: #b8bece;
+  font-weight: 600;
+  font-size: 15px;
+  margin-left: 20px;
+  margin-top: 10px;
+  text-transform: uppercase;
 `;
 
 const Container = styled.View`
@@ -225,12 +256,6 @@ const Container = styled.View`
 `;
 
 const AnimatedContainer = Animated.createAnimatedComponent(Container);
-
-const TitleBar = styled.View`
-  width: 100%;
-  margin-top: 50px;
-  padding-left: 80px;
-`;
 
 const Title = styled.Text`
   font-size: 16px;
@@ -244,13 +269,10 @@ const Name = styled.Text`
   font-weight: bold;
 `;
 
-const Subtitle = styled.Text`
-  color: #b8bece;
-  font-weight: 600;
-  font-size: 15px;
-  margin-left: 20px;
-  margin-top: 20px;
-  text-transform: uppercase;
+const TitleBar = styled.View`
+  width: 100%;
+  margin-top: 50px;
+  padding-left: 80px;
 `;
 
 const logos = [
@@ -282,7 +304,7 @@ const logos = [
 
 const cards = [
   {
-    title: 'React Native For Designers',
+    title: 'React Native for Designers',
     image: require('../assets/background11.jpg'),
     subtitle: 'React Native',
     caption: '1 of 12 sections',
@@ -319,7 +341,7 @@ const courses = [
     logo: require('../assets/logo-studio.png'),
     author: 'Meng To',
     avatar: require('../assets/avatar.jpg'),
-    caption: 'Design an interactive prototype',
+    caption: 'Design and interactive prototype',
   },
   {
     title: 'React for Designers',
