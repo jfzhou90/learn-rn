@@ -17,17 +17,22 @@ class SectionScreen extends React.Component {
     const style = Platform.OS == 'ios' ? 'dark-content' : 'light-content';
     StatusBar.setBarStyle(style, true);
   }
+  
 
   render() {
     const { navigation } = this.props;
     const section = navigation.getParam('section');
+    const imageStyle = {
+      height:'100%',
+      width:'100%',    
+    }
 
     return (
       <ScrollView>
         <Container>
           <StatusBar hidden />
           <Cover>
-            <Image source={{ uri: section.image.url }} />
+            <Image source={{ uri: section.image.url }} style={imageStyle} />
             <Wrapper>
               <Logo source={{uri: section.logo.url}} />
               <Subtitle>{section.subtitle}</Subtitle>
