@@ -1,7 +1,10 @@
 import React, { Component } from 'react';
 import styled from 'styled-components';
 import { TouchableOpacity, TouchableWithoutFeedback, Keyboard } from 'react-native';
-import { BlurView } from 'expo';
+import { BlurView } from 'expo-blur';
+import Success from './Success';
+import Loading from './Loading';
+import { Alert } from 'react-native';
 
 class ModalLogin extends Component {
   state = {
@@ -9,10 +12,20 @@ class ModalLogin extends Component {
     password: '',
     iconEmail: require('../assets/icon-email.png'),
     iconPassword: require('../assets/icon-password.png'),
+    isSuccessful: false,
+    isLoading: false,
   };
 
   handleLogin = () => {
     console.log(this.state);
+    Keyboard.dismiss();
+    this.setState({ isLoading: true });
+    setTimeout(() => {
+      this.setState({ isLoading: false });
+      this.setState({ isSuccessful: true });
+
+      Alert.alert('Congrats', "You've logged successfully!");
+    }, 2000);
   };
 
   focusEmail = () => {
@@ -31,7 +44,7 @@ class ModalLogin extends Component {
 
   tapBackground = () => {
     Keyboard.dismiss();
-  }
+  };
 
   render() {
     return (
@@ -66,6 +79,8 @@ class ModalLogin extends Component {
             </Button>
           </TouchableOpacity>
         </Modal>
+        <Success isActive={this.state.isSuccessful} />
+        <Loading isActive={this.state.isLoading} />
       </Container>
     );
   }
