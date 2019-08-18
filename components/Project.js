@@ -8,6 +8,27 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import * as Icon from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { connect } from 'react-redux';
+
+function mapStateToProps(state) {
+  return {
+    action: state.action,
+  };
+}
+
+function mapDispatchToProps(dispatch) {
+  return {
+    openCard: () =>
+      dispatch({
+        type: 'OPEN_CARD',
+      }),
+    closeCard: () =>
+      dispatch({
+        type: 'CLOSE_CARD',
+      }),
+  };
+}
 
 const screenWidth = Dimensions.get('window').width;
 const screenHeight = Dimensions.get('window').height;
@@ -18,17 +39,22 @@ class Project extends React.Component {
     cardWidth: new Animated.Value(315),
     cardHeight: new Animated.Value(460),
     titleTop: new Animated.Value(20),
-    opacity: new Animated.Value(0)
+    opacity: new Animated.Value(0),
+    textHeight: new Animated.Value(100),
   };
 
   openCard = () => {
+    if (!this.props.canOpen) return;
+
     Animated.spring(this.state.cardWidth, { toValue: screenWidth }).start();
     Animated.spring(this.state.cardHeight, { toValue: screenHeight - tabBarHeight }).start();
 
     Animated.spring(this.state.titleTop, { toValue: 40 }).start();
-    Animated.spring(this.state.opacity, { toValue: 100 }).start();
+    Animated.spring(this.state.opacity, { toValue: 1 }).start();
+    Animated.spring(this.state.textHeight, { toValue: 1000 }).start();
 
     StatusBar.setHidden(true);
+    this.props.openCard();
   };
 
   closeCard = () => {
@@ -37,8 +63,10 @@ class Project extends React.Component {
 
     Animated.spring(this.state.titleTop, { toValue: 20 }).start();
     Animated.spring(this.state.opacity, { toValue: 0 }).start();
+    Animated.spring(this.state.textHeight, { toValue: 100 }).start();
 
     StatusBar.setHidden(false);
+    this.props.closeCard();
   };
 
   render() {
@@ -56,18 +84,27 @@ class Project extends React.Component {
             </AnimatedTitle>
             <Author>by {this.props.author}</Author>
           </Cover>
-          <Text>{this.props.text}</Text>
-          <TouchableOpacity
+          <AnimatedText style={{ height: this.state.textHeight }}>{this.props.text}</AnimatedText>
+          <AnimatedLinearGradient 
+            colors={['rgba(255,255,255,0)', 'rgba(255,255,255,1)']}
             style={{
               position: "absolute",
+              top: 330,
+              width: "100%",
+              height: this.state.textHeight
+            }}
+          />
+          <TouchableOpacity
+            style={{
+              position: 'absolute',
               top: 20,
-              right: 20
+              right: 20,
             }}
             onPress={this.closeCard}
           >
             <AnimatedCloseView
               style={{
-                opacity: this.state.opacity
+                opacity: this.state.opacity,
               }}
             >
               <Icon.Ionicons name="ios-close" size={32} color="#546bfb" />
@@ -79,7 +116,12 @@ class Project extends React.Component {
   }
 }
 
-export default Project;
+export default connect(
+  mapStateToProps,
+  mapDispatchToProps
+)(Project);
+
+const AnimatedLinearGradient = Animated.createAnimatedComponent(LinearGradient);
 
 const Container = styled.View`
   width: 315px;
@@ -142,3 +184,5 @@ const Text = styled.Text`
   line-height: 24px;
   color: #3c4560;
 `;
+
+const AnimatedText = Animated.createAnimatedComponent(Text);

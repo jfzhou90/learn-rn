@@ -18,6 +18,7 @@ import { connect } from 'react-redux';
 import Avatar from '../components/Avatar';
 import gql from 'graphql-tag';
 import { Query } from 'react-apollo';
+import ModalLogin from '../components/ModalLogin';
 
 const CardsQuery = gql`
   {
@@ -206,6 +207,7 @@ class HomeScreen extends React.Component {
             </ScrollView>
           </SafeAreaView>
         </AnimatedContainer>
+        <ModalLogin />
       </RootView>
     );
   }
