@@ -4,7 +4,38 @@ import { TouchableOpacity, TouchableWithoutFeedback, Keyboard } from 'react-nati
 import { BlurView } from 'expo-blur';
 import Success from './Success';
 import Loading from './Loading';
-import { Alert } from 'react-native';
+import { Alert, Animated, Dimensions } from 'react-native';
+import { connect } from 'react-redux';
+import firebase from './Firebase';
+import { AsyncStorage } from 'react-native';
+import { saveState } from './AsyncStorage';
+
+const screenHeight = Dimensions.get('window').height;
+
+function mapStateToProps(state) {
+  return { action: state.action };
+}
+
+function mapDispatchToProps(dispatch) {
+  return {
+    closeLogin: () =>
+      dispatch({
+        type: 'CLOSE_LOGIN',
+      }),
+    updateName: name => {
+      dispatch({
+        type: 'UPDATE_NAME',
+        name,
+      });
+    },
+    updateAvatar: avatar => {
+      dispatch({
+        type: 'UPDATE_AVATAR',
+        avatar
+      })
+    }
+  };
+}
 
 class ModalLogin extends Component {
   state = {
@@ -14,19 +45,72 @@ class ModalLogin extends Component {
     iconPassword: require('../assets/icon-password.png'),
     isSuccessful: false,
     isLoading: false,
+    top: new Animated.Value(screenHeight),
+    scale: new Animated.Value(1.3),
+    translateY: new Animated.Value(0),
   };
+
+  componentDidUpdate() {
+    if (this.props.action === 'openLogin') {
+      Animated.timing(this.state.top, { toValue: 0, duration: 0 }).start();
+      Animated.spring(this.state.scale, { toValue: 1 }).start();
+      Animated.timing(this.state.translateY, { toValue: 0, duration: 0 }).start();
+    }
+
+    if (this.props.action === 'closeLogin') {
+      setTimeout(() => {
+        Animated.timing(this.state.top, { toValue: screenHeight, duration: 0 }).start();
+        Animated.spring(this.state.scale, { toValue: 1.3 }).start();
+      }, 500);
+      Animated.timing(this.state.translateY, { toValue: 1000, duration: 500 }).start();
+    }
+  }
 
   handleLogin = () => {
-    console.log(this.state);
     Keyboard.dismiss();
     this.setState({ isLoading: true });
-    setTimeout(() => {
-      this.setState({ isLoading: false });
-      this.setState({ isSuccessful: true });
 
-      Alert.alert('Congrats', "You've logged successfully!");
-    }, 2000);
+    const email = this.state.email;
+    const password = this.state.password;
+
+    firebase
+      .auth()
+      .signInWithEmailAndPassword(email, password)
+      .catch(function(error) {
+        Alert.alert('Error', error.message);
+      })
+      .then(response => {
+        this.setState({ isLoading: false });
+
+        if (response) {
+          this.setState({ isSuccessful: true });
+
+          Alert.alert('Congrats', "You've logged successfully!");
+
+          this.fetchUser()
+          setTimeout(() => {
+            this.props.closeLogin();
+            this.setState({ isSuccessful: false });
+          }, 1000);
+        }
+      });
   };
+
+  fetchUser = () => {
+    fetch('https://uifaces.co/api?limit=1&random', {
+      headers: new Headers({
+        'X-API-KEY': 'eeaafbe81657073cd70ac6e3de1bd6',
+      }),
+    })
+      .then(response => response.json())
+      .then(response => {
+        const name = response[0].name;
+        const avatar = response[0].photo;
+        saveState({name, avatar});
+        this.props.updateName(name);
+        this.props.updateAvatar(avatar);
+      });
+  }
 
   focusEmail = () => {
     this.setState({
@@ -44,11 +128,12 @@ class ModalLogin extends Component {
 
   tapBackground = () => {
     Keyboard.dismiss();
+    this.props.closeLogin();
   };
 
   render() {
     return (
-      <Container>
+      <AnimatedContainer style={{ top: this.state.top }}>
         <TouchableWithoutFeedback onPress={this.tapBackground}>
           <BlurView
             tint="default"
@@ -56,7 +141,11 @@ class ModalLogin extends Component {
             style={{ position: 'absolute', width: '100%', height: '100%' }}
           />
         </TouchableWithoutFeedback>
-        <Modal>
+        <AnimatedModal
+          style={{
+            transform: [{ scale: this.state.scale }, { translateY: this.state.translateY }],
+          }}
+        >
           <Logo source={require('../assets/logo-dc.png')} />
           <Text>Start Learning. Access Pro Content.</Text>
           <TextInput
@@ -78,15 +167,18 @@ class ModalLogin extends Component {
               <ButtonText>Log In</ButtonText>
             </Button>
           </TouchableOpacity>
-        </Modal>
+        </AnimatedModal>
         <Success isActive={this.state.isSuccessful} />
         <Loading isActive={this.state.isLoading} />
-      </Container>
+      </AnimatedContainer>
     );
   }
 }
 
-export default ModalLogin;
+export default connect(
+  mapStateToProps,
+  mapDispatchToProps
+)(ModalLogin);
 
 const Container = styled.View`
   position: absolute;
@@ -99,6 +191,8 @@ const Container = styled.View`
   align-items: center;
 `;
 
+const AnimatedContainer = Animated.createAnimatedComponent(Container);
+
 const Modal = styled.View`
   width: 335px;
   height: 370px;
@@ -107,6 +201,8 @@ const Modal = styled.View`
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
   align-items: center;
 `;
+
+const AnimatedModal = Animated.createAnimatedComponent(Modal);
 
 const Logo = styled.Image`
   width: 44px;

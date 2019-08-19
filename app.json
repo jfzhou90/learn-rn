@@ -18,7 +18,11 @@
     },
     "assetBundlePatterns": ["**/*"],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "io.designcode.DesignCodeExpo"
+    },
+    "android": {
+      "package": "io.designcode.DesignCodeExpo"
     }
   }
 }
